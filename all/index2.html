@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>客户1</title>
+	<script src="static/js/mqtt.js"></script>
+	<script src="https://cdn.bootcss.com/vue/2.4.2/vue.min.js"></script>
+
+	<style>
+		*{
+			margin: 0;
+			padding: 0;
+			border:none;
+			list-style: none;
+		}
+		#mqtt{
+			width:500px;
+			margin: 50px auto;
+		}
+		.input{
+			line-height: 4em;
+			display: flex;
+			border: 1px solid #ccc;
+		}
+		input,button{
+			line-height: 4em;
+			outline: none;
+		}
+		input{
+
+			padding:0 20px;
+			flex:auto
+		}
+		button{
+			padding:0 20px;
+			margin-left:10px;
+			flex:none
+		}
+		.getmessage{
+			margin-top:20px;
+			padding:10px;
+			border:1px solid #aaa;
+			height:500px;
+			background-color: #eeeeee;
+			text-align: center;
+		}
+		.getmessage p{
+			margin-top: 140px;
+			color: #888;
+		}
+		.getmessage p .msg{
+			font-size: 100px;
+			font-weight: 500;
+		}
+		.getmessage p .sta{
+			font-size: 20px;
+		}
+		.getmessage ul{
+			display: flex;
+			justify-content: space-around;
+			align-items: center;
+			padding:0 30px;
+			margin-top: 140px;
+		}
+		.getmessage ul li{
+			font-size: 20px;
+			color: #888;
+		}
+	</style>
+</head>
+<body>
+<div id="mqtt">
+	<div class="input">
+		<input placeholder="发布消息" type="text" v-model="pubtext">
+		<button @click="publish">发布</button>
+	</div>
+	<div class="getmessage">
+		<p>
+			<span class="msg">{{status.weatcher}}</span>
+			<span class="sta" v-if="status.pattern==1">制冷</span>
+			<span class="sta" v-else-if="status.pattern==2">制热</span>
+			<span class="sta" v-else-if="status.pattern==3">通风</span>
+			<span class="sta" v-else-if="status.pattern==4">除湿</span>
+		</p>
+		<ul>
+			<li v-if="status.speed==1">低速</li>
+			<li v-else-if="status.speed==2">中速</li>
+			<li v-else-if="status.speed==3">高速</li>
+			<li v-if="status.direction==1">风向上</li>
+			<li v-else-if="status.direction==2">风向中</li>
+			<li v-else-if="status.direction==3">风向下</li>
+			<li>{{status.swing==1?'扫风':'不扫风'}}</li>
+		</ul>
+	</div>
+</div>
+<script>
+	new Vue({
+		el:'#mqtt',
+		data:{
+			pubtext:'',
+			message:'',
+			client:null,
+			status:{
+				weatcher:26,
+				speed:1,
+				swing:0,
+				direction:1,
+				pattern:1,
+				status:0  //0表示关闭状态  1表示开启状态
+			}
+		},
+		created(){
+			this.client = mqtt.connect('http://192.168.31.240:8083',{
+				username:'alice',
+				password:'secret',
+			});
+
+			this.client.subscribe("AD2648");
+
+			this.client.on("message", (topic, payload)=> {
+				console.log('我的订阅：'+topic)
+				console.log('我收到的消息：'+payload)
+
+				this.status = Object.assign(this.status,this.toJSON(payload));
+
+				this.client.publish("WG5246/clien", this.toStr());
+				this.message= payload.toString();
+			});
+		},
+		methods:{
+			publish(){
+				var str = this.toStr()
+				this.client.publish("WG5246/clien", str);
+			},
+			toStr(){
+				var str = '';
+				for(var item in this.status){
+					str += ""+item+"="+this.status[item]+"&";
+				}
+				return str = str.substring(0,str.length-1);
+			},
+			toJSON(payload){
+				var json = {};
+				//字符串转json对象
+				var arr = payload.toString().split('&').map(function(val){
+					return val.split('=')
+				})
+				arr.forEach(function(val){
+					json[val[0]] =~~val[1];
+				})
+				return json;
+			}
+		},
+	})
+
+
+
+</script>
+</body>
+</html>

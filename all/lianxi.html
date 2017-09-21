@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Title</title>
+</head>
+<body>
+<script>
+	var str='a=1&b=2&c=3';
+	function changeObj(str) {
+		var tempArr1=str.split('&');
+		console.log(tempArr1);
+		var obj={};
+		for (var i = 0; i < tempArr1.length; i++) {
+			var tempArr2=tempArr1[i].split('=');
+			console.log(tempArr2);
+			obj[tempArr2[0]]=tempArr2[1];
+		}
+		return obj;
+	}
+	console.log(changeObj(str));
+</script>
+</body>
+</html>
